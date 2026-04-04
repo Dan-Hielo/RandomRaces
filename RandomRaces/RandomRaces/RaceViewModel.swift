@@ -7,7 +7,7 @@ class RaceViewModel {
     var raceState: RaceState = .setup
     var tick: Int = 0
     var horseCount: Int = 4
-    var horseNames: [String] = ["Thunder", "Blaze", "Storm", "Comet"]
+    var horseNames: [String] = ["Veera", "Paniel", "Storm", "Comet"]
 
     enum RaceState { case setup, idle, racing, finished }
 
@@ -17,7 +17,7 @@ class RaceViewModel {
 
     func applyHorseCount(_ count: Int) {
         horseCount = count
-        let defaults = ["Thunder","Blaze","Storm","Comet","Rocket","Shadow","Flash","Arrow"]
+        let defaults = ["Veera","Paniel","Storm","Comet","Rocket","Shadow","Flash","Arrow"]
         while horseNames.count < count {
             horseNames.append(defaults[horseNames.count % defaults.count])
         }

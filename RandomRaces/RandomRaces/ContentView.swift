@@ -83,119 +83,119 @@ struct RaceView: View {
         VStack(spacing: 16 * scale) {
             Text("🏇 Horse Race")
                 .font(.system(size: 36 * scale, weight: .bold))
-
-            GeometryReader { geo in
-                let trackWidth = geo.size.width
-                let totalHeight = CGFloat(vm.horses.count) * laneHeight
-
-                ZStack(alignment: .leading) {
-
-                    // --- Grass base ---
-                    Canvas { context, size in
-                        // Alternating dark/light green lanes
-                        for (idx, _) in vm.horses.enumerated() {
-                            let y = CGFloat(idx) * laneHeight
-                            let baseGreen: Color = idx % 2 == 0
+            if vm.raceState != .finished {
+                GeometryReader { geo in
+                    let trackWidth = geo.size.width
+                    let totalHeight = CGFloat(vm.horses.count) * laneHeight
+                    
+                    ZStack(alignment: .leading) {
+                        
+                        // --- Grass base ---
+                        Canvas { context, size in
+                            // Alternating dark/light green lanes
+                            for (idx, _) in vm.horses.enumerated() {
+                                let y = CGFloat(idx) * laneHeight
+                                let baseGreen: Color = idx % 2 == 0
                                 ? Color(red: 0.18, green: 0.55, blue: 0.18)
                                 : Color(red: 0.14, green: 0.45, blue: 0.14)
-                            context.fill(
-                                Path(CGRect(x: 0, y: y, width: size.width, height: laneHeight)),
-                                with: .color(baseGreen)
-                            )
-                        }
-
-                        // Grass stripe texture (vertical streaks per lane)
-                        for (idx, _) in vm.horses.enumerated() {
-                            let y = CGFloat(idx) * laneHeight
-                            let stripeColor: Color = idx % 2 == 0
+                                context.fill(
+                                    Path(CGRect(x: 0, y: y, width: size.width, height: laneHeight)),
+                                    with: .color(baseGreen)
+                                )
+                            }
+                            
+                            // Grass stripe texture (vertical streaks per lane)
+                            for (idx, _) in vm.horses.enumerated() {
+                                let y = CGFloat(idx) * laneHeight
+                                let stripeColor: Color = idx % 2 == 0
                                 ? Color(red: 0.20, green: 0.60, blue: 0.20).opacity(0.4)
                                 : Color(red: 0.16, green: 0.50, blue: 0.16).opacity(0.4)
-                            var stripeX: CGFloat = 0
-                            while stripeX < size.width {
-                                context.fill(
-                                    Path(CGRect(x: stripeX, y: y, width: 6, height: laneHeight)),
-                                    with: .color(stripeColor)
+                                var stripeX: CGFloat = 0
+                                while stripeX < size.width {
+                                    context.fill(
+                                        Path(CGRect(x: stripeX, y: y, width: 6, height: laneHeight)),
+                                        with: .color(stripeColor)
+                                    )
+                                    stripeX += 18
+                                }
+                            }
+                            
+                            // Horizontal lane dividers
+                            for idx in 0...vm.horses.count {
+                                let y = CGFloat(idx) * laneHeight
+                                let isOuter = idx == 0 || idx == vm.horses.count
+                                var line = Path()
+                                line.move(to: CGPoint(x: 0, y: y))
+                                line.addLine(to: CGPoint(x: size.width, y: y))
+                                context.stroke(
+                                    line,
+                                    with: .color(Color.white.opacity(isOuter ? 0.7 : 0.35)),
+                                    lineWidth: isOuter ? 2.5 : 1.2
                                 )
-                                stripeX += 18
+                            }
+                            
+                            // Finish line (red + white dashes)
+                            let finishX = size.width - 2
+                            var dash = Path()
+                            dash.move(to: CGPoint(x: finishX, y: 0))
+                            dash.addLine(to: CGPoint(x: finishX, y: totalHeight))
+                            context.stroke(dash, with: .color(.red), lineWidth: 3)
+                            
+                            // Finish line checkerboard dashes
+                            let dashH: CGFloat = laneHeight / 4
+                            var dy: CGFloat = 0
+                            var toggle = true
+                            while dy < totalHeight {
+                                context.fill(
+                                    Path(CGRect(x: finishX - 8, y: dy, width: 8, height: dashH)),
+                                    with: .color(toggle ? .white : .red)
+                                )
+                                dy += dashH
+                                toggle.toggle()
                             }
                         }
-
-                        // Horizontal lane dividers
-                        for idx in 0...vm.horses.count {
-                            let y = CGFloat(idx) * laneHeight
-                            let isOuter = idx == 0 || idx == vm.horses.count
-                            var line = Path()
-                            line.move(to: CGPoint(x: 0, y: y))
-                            line.addLine(to: CGPoint(x: size.width, y: y))
-                            context.stroke(
-                                line,
-                                with: .color(Color.white.opacity(isOuter ? 0.7 : 0.35)),
-                                lineWidth: isOuter ? 2.5 : 1.2
-                            )
-                        }
-
-                        // Finish line (red + white dashes)
-                        let finishX = size.width - 2
-                        var dash = Path()
-                        dash.move(to: CGPoint(x: finishX, y: 0))
-                        dash.addLine(to: CGPoint(x: finishX, y: totalHeight))
-                        context.stroke(dash, with: .color(.red), lineWidth: 3)
-
-                        // Finish line checkerboard dashes
-                        let dashH: CGFloat = laneHeight / 4
-                        var dy: CGFloat = 0
-                        var toggle = true
-                        while dy < totalHeight {
-                            context.fill(
-                                Path(CGRect(x: finishX - 8, y: dy, width: 8, height: dashH)),
-                                with: .color(toggle ? .white : .red)
-                            )
-                            dy += dashH
-                            toggle.toggle()
-                        }
-                    }
-                    .frame(width: trackWidth, height: totalHeight)
-
-                    // --- Horse name labels ---
-                    VStack(spacing: 0) {
-                        ForEach(vm.horses) { horse in
-                            HStack {
-                                Text(horse.name)
-                                    .font(.system(size: 12 * scale, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black.opacity(0.6), radius: 2, x: 0, y: 1)
-                                    .frame(width: 75 * scale, alignment: .leading)
-                                    .padding(.leading, 6)
-                                Spacer()
+                        .frame(width: trackWidth, height: totalHeight)
+                        
+                        // --- Horse name labels ---
+                        VStack(spacing: 0) {
+                            ForEach(vm.horses) { horse in
+                                HStack {
+                                    Text(horse.name)
+                                        .font(.system(size: 12 * scale, weight: .semibold))
+                                        .foregroundColor(.white)
+                                        .shadow(color: .black.opacity(0.6), radius: 2, x: 0, y: 1)
+                                        .frame(width: 75 * scale, alignment: .leading)
+                                        .padding(.leading, 6)
+                                    Spacer()
+                                }
+                                .frame(height: laneHeight)
                             }
-                            .frame(height: laneHeight)
                         }
-                    }
-
-                    // --- Horses ---
-                    VStack(spacing: 0) {
-                        ForEach(vm.horses) { horse in
-                            HStack {
-                                Text(horse.color)
-                                    .font(.system(size: 30 * scale))
-                                    .offset(x: CGFloat(horse.position) * (trackWidth - 80 * scale))
-                                    .animation(.linear(duration: 0.05), value: horse.position)
-                                Spacer()
+                        
+                        // --- Horses ---
+                        VStack(spacing: 0) {
+                            ForEach(vm.horses) { horse in
+                                HStack {
+                                    Text(horse.color)
+                                        .font(.system(size: 30 * scale))
+                                        .offset(x: CGFloat(horse.position) * (trackWidth - 80 * scale))
+                                        .animation(.linear(duration: 0.05), value: horse.position)
+                                    Spacer()
+                                }
+                                .frame(height: laneHeight)
+                                .padding(.leading, 80 * scale)
                             }
-                            .frame(height: laneHeight)
-                            .padding(.leading, 80 * scale)
                         }
                     }
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.4), lineWidth: 2)
+                    )
                 }
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.white.opacity(0.4), lineWidth: 2)
-                )
-            }
-            .frame(height: CGFloat(vm.horses.count) * laneHeight)
-            .padding(.horizontal)
-
+                .frame(height: CGFloat(vm.horses.count) * laneHeight)
+                .padding(.horizontal)
+            } //Close of the IF for removing the tract on finished races
             // Results
             if vm.raceState == .finished {
                 VStack(alignment: .leading, spacing: 6 * scale) {
